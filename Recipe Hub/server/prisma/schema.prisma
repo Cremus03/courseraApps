@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  email             String             @unique
+  passwordHash      String
+  name              String
+  createdAt         DateTime           @default(now())
+  recipes           Recipe[]
+  reviews           Review[]
+  favorites         Favorite[]
+  cookedHistory     CookedHistory[]
+  mealPlanEntries   MealPlanEntry[]
+  shoppingListItems ShoppingListItem[]
+}
+
+model Recipe {
+  id              Int             @id @default(autoincrement())
+  title           String
+  description     String?
+  imageUrl        String?
+  mealType        String? // breakfast | lunch | dinner | snack
+  dietTypes       String? // comma-separated: vegetarian,vegan,gluten-free
+  difficulty      String? // easy | medium | hard
+  prepTime        Int? // minutes
+  cookTime        Int? // minutes
+  servings        Int             @default(4) // base servings the ingredient quantities are for
+  calories        Float? // per serving
+  protein         Float? // grams per serving
+  carbs           Float? // grams per serving
+  fat             Float? // grams per serving
+  popularity      Int             @default(0)
+  authorId        Int?
+  author          User?           @relation(fields: [authorId], references: [id])
+  ingredients     Ingredient[]
+  steps           Step[]
+  reviews         Review[]
+  favorites       Favorite[]
+  cookedHistory   CookedHistory[]
+  mealPlanEntries MealPlanEntry[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Ingredient {
+  id       Int     @id @default(autoincrement())
+  recipeId Int
+  recipe   Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  name     String
+  quantity Float
+  unit     String // g, kg, ml, l, buc, lingura, praf, etc.
+  category String? // for shopping list grouping: lactate, legume, carne, etc.
+  order    Int     @default(0)
+}
+
+model Step {
+  id           Int     @id @default(autoincrement())
+  recipeId     Int
+  recipe       Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  order        Int
+  text         String
+  timerSeconds Int?
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([recipeId, userId])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, recipeId])
+}
+
+model CookedHistory {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId Int
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  cookedAt DateTime @default(now())
+}
+
+model MealPlanEntry {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  weekStart String // ISO date of the Monday of that week, e.g. "2026-09-28"
+  dayOfWeek Int // 0 = Monday ... 6 = Sunday
+  mealType  String? // breakfast | lunch | dinner | snack
+  createdAt DateTime @default(now())
+}
+
+model ShoppingListItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  quantity  Float
+  unit      String
+  category  String?
+  checked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
